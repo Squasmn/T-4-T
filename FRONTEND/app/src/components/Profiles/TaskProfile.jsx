@@ -1,0 +1,240 @@
+import { useState, useContext, useEffect } from "react";
+import axios from "axios";
+import AuthContext from "../../contexts/AuthContext";
+import Input from "./Inputs/Input";
+import TagInputForStorage from "../Tags/TagInputForStorage";
+import { TagsContext } from "../../contexts/TagsContext";
+
+const TaskProfile = () => {
+  const { isLoggedIn, authToken, userEmail, setUserEmail } =
+    useContext(AuthContext);
+  const [isEditing, setIsEditing] = useState(true);
+  const [formData, setFormData] = useState({
+    taskDescription: "",
+    requiredSkills: "",
+    experienceLevel: "",
+    clientName: "",
+    clientIndustry: "",
+    clientWebsite: "",
+    pay: "",
+    clientDescription: "",
+    tags: [],
+  });
+  const { selectedTags, setSelectedTags } = useContext(TagsContext);
+
+  useEffect(() => {
+    if (isLoggedIn && authToken) {
+      console.log(`Sending request with auth token: ${authToken}`);
+      axios
+        .get("http://localhost:3000/TaskProfile", {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        })
+        .then((response) => {
+          if (response.status === 204) {
+            console.log("No TaskProfile exists yet for this user");
+            setFormData({
+              taskDescription: "",
+              requiredSkills: "",
+              experienceLevel: "",
+              clientName: "",
+              clientIndustry: "",
+              clientWebsite: "",
+              pay: "",
+              clientDescription: "",
+              tags: [],
+            });
+            setSelectedTags([]);
+          } else {
+            setFormData(response.data);
+            setSelectedTags(response.data.tags); // Set the selected tags
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching task profile:", error);
+        });
+    }
+  }, [isLoggedIn, authToken, setSelectedTags]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevFormData) => {
+      return { ...prevFormData, [name]: value };
+    });
+  };
+
+  const handleTagSelect = (tag) => {
+    setSelectedTags(selectedTags.filter((selectedTag) => selectedTag !== tag));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log("Beginning task update:", userEmail);
+    try {
+      console.log(authToken);
+
+      // Add the selected tags to the formData
+      const updatedFormData = { ...formData, tags: selectedTags };
+
+      const response = await axios.put(
+        "http://localhost:3000/updateTaskProfile",
+        updatedFormData, // Use the updated formData
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      if (response.status === 404) {
+        // TaskProfile doesn't exist, create a new one
+        const createResponse = await axios.post(
+          "http://localhost:3000/postTaskProfile",
+          formData,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+        console.log("New task profile created:", createResponse.data);
+        return;
+      }
+
+      if (response.status !== 200) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = response.data;
+      console.log(result);
+
+      if (result.email) {
+        setUserEmail(result.email);
+      }
+      console.log("After setUserEmail result:", userEmail);
+    } catch (error) {
+      console.error("Error updating task profile:", error.message);
+    } finally {
+      setIsEditing(!isEditing);
+    }
+  };
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-base-100">
+      <div className="flex-col lg:flex-row-reverse">
+        <div className="card shrink-0 w-full max-w-xxl shadow-xl bg-base-300 mt-3 mb-10">
+          <form className="card-body text-base" onSubmit={handleSubmit}>
+            <h3 className="text-primary text-center mb-4">
+              Erstelle einen Task
+            </h3>
+            <div className="flex items-center justify-center">
+              <button
+                className="btn btn-ghost btn-m m-1"
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                Bearbeiten
+              </button>
+            </div>
+            <div className="mb-8 mt-10">
+              <Input
+                labelText="Task Beschrebung"
+                placeholder="was soll getan werden?"
+                name="taskDescription"
+                type="textarea"
+                value={formData.taskDescription}
+                handleChange={handleChange}
+                readOnly={isEditing}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-x-10">
+              {/* Left column */}
+              <div>
+                <Input
+                  labelText="Aftragggeber Name"
+                  placeholder="Name des Auftraggebers"
+                  name="clientName"
+                  type="text"
+                  value={formData.clientName}
+                  handleChange={handleChange}
+                  readOnly={isEditing}
+                />
+                <Input
+                  labelText="Benötigte Skills"
+                  placeholder="benötigte Skills"
+                  name="requiredSkills"
+                  type="text"
+                  value={formData.requiredSkills}
+                  handleChange={handleChange}
+                  readOnly={isEditing}
+                />
+                <Input
+                  labelText="Experience Level"
+                  placeholder="welches Erfahrungslevel?"
+                  name="experienceLevel"
+                  type="text"
+                  value={formData.experienceLevel}
+                  handleChange={handleChange}
+                  readOnly={isEditing}
+                />
+              </div>
+              {/* Right column */}
+              <div>
+                <Input
+                  labelText="Branche"
+                  placeholder="welche Branche?"
+                  name="clientIndustry"
+                  type="text"
+                  value={formData.clientIndustry}
+                  handleChange={handleChange}
+                  readOnly={isEditing}
+                />
+                <Input
+                  labelText="Client Website"
+                  placeholder="Website"
+                  name="clientWebsite"
+                  type="text"
+                  value={formData.clientWebsite}
+                  handleChange={handleChange}
+                  readOnly={isEditing}
+                />
+                <Input
+                  labelText="Bezahlung"
+                  placeholder="was zahlst du?"
+                  name="pay"
+                  type="text"
+                  value={formData.pay}
+                  handleChange={handleChange}
+                  readOnly={isEditing}
+                />
+              </div>
+            </div>
+            <div className="mt-8">
+              <Input
+                labelText="Auftraggeber Beschreibung"
+                placeholder="Auftraggeber"
+                name="clientDescription"
+                type="textarea"
+                value={formData.clientDescription}
+                handleChange={handleChange}
+                readOnly={isEditing}
+              />
+            </div>
+            <TagInputForStorage handleTagSelect={handleTagSelect} />
+            {/* Submit button */}
+            {!isEditing ? (
+              <div className="form-control col-span-2 mt-6">
+                <input type="submit" value="SPEICHERN" className="btn" />
+              </div>
+            ) : null}
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskProfile;
