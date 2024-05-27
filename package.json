@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
+    "build": "npm run build --workspace=FRONTEND/app && npm run build --workspace=BACKEND/api",
     "vercel-build": "npm run build",
-    "start": "npm start --workspace=frontend && npm start --workspace=backend"
+    "start": "npm start --workspace=FRONTEND/app && npm start --workspace=BACKEND/api"
   },
   "workspaces": [
     "FRONTEND/app",
