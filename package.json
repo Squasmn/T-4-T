@@ -1,0 +1,14 @@
+{
+  "name": "t4t",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
+    "vercel-build": "npm run build",
+    "start": "npm start --workspace=frontend && npm start --workspace=backend"
+  },
+  "workspaces": [
+    "FRONTEND/app",
+    "BACKEND/api"
+  ]
+}
